@@ -6,7 +6,7 @@ Módulo de pago de pagamastarde.com para DrupalCommerce (DrupalCommerce v2.x / D
 ## Instrucciones de Instalación
 
 1. Crea tu cuenta en Pagamastarde.com si aún no la tienes [desde aquí](https://bo.pagamastarde.com)
-2. Descarga el módulo de [aquí](https://github.com/pagantis-team/pagamastarde-drupalcommerce/releases/)
+2. Descarga el módulo de [aquí](https://github.com/pagantis/pagamastarde-drupalcommerce/releases)
 3. Instala el módulo en tu backoffice de Drupal usando el método estandard ( lee Guide.pdf para más información ).
 4. Crea el método de pago en tu módulo de DrupalCommerce.
 5. Configuralo con la información de tu cuenta que encontrarás en [el panel de gestión de Pagamastarde](https://bo.pagamastarde.com/shop). Ten en cuenta que para hacer cobros reales deberás activar tu cuenta de Pagantis.
