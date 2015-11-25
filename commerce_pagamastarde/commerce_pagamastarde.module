@@ -62,7 +62,7 @@ function commerce_pagamastarde_commerce_payment_method_info() {
     'base' => 'commerce_pagamastarde',
     'title' => t('Financiación con Paga+Tarde'),
     'short_title' => t('Paga+Tarde'),
-    'description' => t('Paga+Tarde SIM/DPM'),
+    'description' => t('Paga+Tarde'),
     'active' => FALSE,
     'terminal' => FALSE,
     'offsite' => TRUE,
@@ -333,3 +333,5 @@ function commerce_pagamastarde_order_complete() {
   drupal_set_message($message, 'error');
   drupal_goto('cart');
 }
+//add widget javascript
+drupal_add_js('https://cdn.pagamastarde.com/js/pmt-simulator/latest/js/pmt-simulator.min.js', 'external');
