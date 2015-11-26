@@ -8,27 +8,7 @@
 /**
  * Paga+Tarde server addresses.
  */
-define('PAGAMASTARDE_URL', 'https://pmt.pagantis.com/v1/installments');
-
-/**
- * Returns a state name given a state code
- */
-function getStateName($state_code, $country_code = NULL) {
-  if ($state_code) {
-    $state_code = drupal_strtoupper($state_code);
-    $country_code = $country_code ? drupal_strtoupper($country_code) : 'US';
-
-    $address['country'] = $country_code;
-    $format_handlers = array('address');
-    $context = array('mode' => 'form');
-    $address_element = addressfield_generate($address, $format_handlers, $context);
-    if (!empty($address_element['locality_block']['administrative_area']['#options'])) {
-      $state_options = $address_element['locality_block']['administrative_area']['#options'];
-      $state_options = array_change_key_case($state_options, CASE_UPPER);
-      return isset($state_options[$state_code]) ? $state_options[$state_code] : '';
-    }
-  }
-}
+define('COMMERCE_PAGAMASTARDE_PAGAMASTARDE_URL', 'https://pmt.pagantis.com/v1/installments');
 
 /**
  * Implements hook_menu().
@@ -85,18 +65,18 @@ function commerce_pagamastarde_settings_form($settings = NULL) {
     'real_account' => '',
     'real_key' => '',
     'discount' => 'false',
-    );
+  );
   $form['entorno'] = array(
-      '#type' => 'select',
-      '#title' => t('Entorno'),
-      '#options' => array(
-        'test' => 'test',
-        'real' => 'real',
-      ),
-      '#multiple' => FALSE,
-      '#description' => t('Procesar transaciones en modo test o real.'),
-      '#default_value' => $settings['entorno'],
-    );
+    '#type' => 'select',
+    '#title' => t('Entorno'),
+    '#options' => array(
+      'test' => 'test',
+      'real' => 'real',
+    ),
+    '#multiple' => FALSE,
+    '#description' => t('Procesar transaciones en modo test o real.'),
+    '#default_value' => $settings['entorno'],
+  );
   $form['test_account'] = array(
     '#type' => 'textfield',
     '#title' => t('TEST - Código de cuenta'),
@@ -136,8 +116,7 @@ function commerce_pagamastarde_settings_form($settings = NULL) {
 }
 
 /**
- * Payment method callback: redirect form, a wrapper around the module's general
- *   use function for building a form.
+ * Redirect form, a wrapper function for building a form.
  */
 function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payment_method) {
   // Return an error if the enabling action's settings haven't been configured.
@@ -150,30 +129,31 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
 
   // Build a description for the order.
   $description = array();
-  $i=1;
+  $i = 1;
   foreach ($order_wrapper->commerce_line_items as $delta => $line_item_wrapper) {
     if (in_array($line_item_wrapper->type->value(), commerce_product_line_item_types())) {
-        $product_id = $line_item_wrapper->commerce_product->product_id->value();
-        $product = commerce_product_load($product_id);
-        $price = commerce_product_calculate_sell_price($product);
-        $description[] = $product->title. " (".$line_item_wrapper->quantity->value().")";
-        //item descriptions
-        $items["items[$i][description]"]=$product->title. " (".$line_item_wrapper->quantity->value().")";
-        $items["items[$i][quantity]"]=$line_item_wrapper->quantity->value();
-        $items["items[$i][amount]"]=number_format($price['amount']/100 * $line_item_wrapper->quantity->value(),2,',','');
-        $i++;
+      $product_id = $line_item_wrapper->commerce_product->product_id->value();
+      $product = commerce_product_load($product_id);
+      $price = commerce_product_calculate_sell_price($product);
+      $description[] = $product->title . " (" . $line_item_wrapper->quantity->value() . ")";
+      // Item descriptions.
+      $items["items[$i][description]"] = $product->title . " (" . $line_item_wrapper->quantity->value() . ")";
+      $items["items[$i][quantity]"] = $line_item_wrapper->quantity->value();
+      $items["items[$i][amount]"] = number_format($price['amount'] / 100 * $line_item_wrapper->quantity->value(), 2, ',', '');
+      $i++;
     }
 
-    //shipping
-    $items["items[0][amount]"]=0;
+    // Shipping.
+    $items["items[0][amount]"] = 0;
     if ($line_item_wrapper->type->value() == "shipping") {
-        // shipping data
-        $items["items[0][description]"]= $line_item_wrapper->value()->data['shipping_service']['name'];
-        $items["items[0][quantity]"]=1;
-        $items["items[0][amount]"]+=$line_item_wrapper->value()->data['shipping_service']['base_rate']['amount']/100;
+      // Shipping data.
+      $items["items[0][description]"] = $line_item_wrapper->value()->data['shipping_service']['name'];
+      $items["items[0][quantity]"] = 1;
+      $items["items[0][amount]"] += $line_item_wrapper->value()->data['shipping_service']['base_rate']['amount'] / 100;
     }
   }
-    $items["items[0][amount]"]=number_format($items["items[0][amount]"],2,',','');
+
+  $items["items[0][amount]"] = number_format($items["items[0][amount]"], 2, ',', '');
 
   // Prepare the billing address for use in the request.
   $billing_address = $order_wrapper->commerce_customer_billing->commerce_customer_address->value();
@@ -186,36 +166,35 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
   $amount = $order_wrapper->commerce_order_total->amount->value();
   $currency_code = $order_wrapper->commerce_order_total->currency_code->value();
 
-
-  if ($payment_method['settings']['entorno'] == 'test'){
+  if ($payment_method['settings']['entorno'] == 'test') {
     $the_account = $payment_method['settings']['test_account'];
     $the_key = $payment_method['settings']['test_key'];
-  }else{
+  }
+  else {
     $the_account = $payment_method['settings']['real_account'];
     $the_key = $payment_method['settings']['real_key'];
   }
-  $amount =$amount;
+  $amount = $amount;
 
   $args = array(
-    'oid' =>  $order->order_id
-    );
+    'oid' => $order->order_id ,
+  );
 
-  //$ok_url=check_url(url('cart/pagamastarde/order_complete', array('absolute' => TRUE,'oid' => $order->order_id)));
-  $ok_url=url('cart/pagamastarde/order_complete', array('absolute' => TRUE, 'query' => $args));
-  $callback_url=check_url(url('cart/pagamastarde/complete', array('absolute' => TRUE)));
-  $nok_url=check_url(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
+  $ok_url = url('cart/pagamastarde/order_complete', array('absolute' => TRUE, 'query' => $args));
+  $callback_url = check_url(url('cart/pagamastarde/complete', array('absolute' => TRUE)));
+  $nok_url = check_url(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
 
-  // Create the MD5 hash fingerprint
-  $message = $the_key.$the_account.$order->order_id.$amount.$currency_code.$ok_url.$nok_url.$callback_url.$payment_method['settings']['discount'];
+  // Create the MD5 hash fingerprint.
+  $message = $the_key . $the_account . $order->order_id . $amount . $currency_code .
+    $ok_url . $nok_url . $callback_url . $payment_method['settings']['discount'];
   $signature = sha1($message);
 
-  $state_code = getStateName($billing_address['administrative_area'], $billing_address['country']);
+  $state_code = commerce_pagamastarde_get_state_name($billing_address['administrative_area'], $billing_address['country']);
 
   $submit_data = array(
-    // essentials & good practice params
     'order_id' => $order->order_id,
     'email' => drupal_substr($order->mail, 0, 255),
-    'full_name' => drupal_substr($billing_address['first_name'], 0, 50). " ". drupal_substr($billing_address['last_name'], 0, 50),
+    'full_name' => drupal_substr($billing_address['first_name'], 0, 50) . " " . drupal_substr($billing_address['last_name'], 0, 50),
     'amount' => $amount,
     'currency' => $currency_code,
     'account_id' => $the_account,
@@ -230,11 +209,11 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
     'description' => drupal_substr(implode(', ', $description), 0, 255),
     'signature' => $signature,
   );
-  foreach ($items as $key => $value){
+  foreach ($items as $key => $value) {
     $submit_data[$key] = $value;
   }
 
-  $form['#action'] = PAGAMASTARDE_URL;
+  $form['#action'] = COMMERCE_PAGAMASTARDE_PAGAMASTARDE_URL;
 
   foreach ($submit_data as $name => $value) {
     $form[$name] = array(
@@ -271,67 +250,83 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
 function commerce_pagamastarde_complete() {
   $json = file_get_contents('php://input');
 
-  $notification = json_decode($json, true);
-  if(isset($notification['event']) && $notification['event'] == 'charge.created')  {
+  $notification = json_decode($json, TRUE);
+  if (isset($notification['event']) && $notification['event'] == 'charge.created') {
 
     $order_id = $notification['data']['order_id'];
     $order = commerce_order_load($order_id);
 
     $transaction = commerce_payment_transaction_new('pagamastarde', $order->order_id);
     $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
-    $transaction->message = "Paga+Tarde payment received for order: ".$order->order_id;
+    $transaction->message = "Paga+Tarde payment received for order: " . $order->order_id;
     $transaction->remote_id = $notification['data']['id'];
-    $transaction->amount = commerce_currency_decimal_to_amount($notification['data']['amount']/100, $notification['data']['currency']);
+    $transaction->amount = commerce_currency_decimal_to_amount($notification['data']['amount'] / 100, $notification['data']['currency']);
     $transaction->currency_code = $notification['data']['currency'];
     commerce_order_status_update($order, 'processing', FALSE, TRUE, 'Your payment has been successfully completed');
     commerce_payment_transaction_save($transaction);
     commerce_payment_redirect_pane_next_page($order);
 
-  // Build an HTML snippet that will be returned to Paga+Tarde and requested
-  // back.
-
-  $args = array(
-    'oid' => $order_id
+    $args = array(
+      'oid' => $order_id,
     );
-  $redirect_url = url('cart/pagamastarde/order_complete', array('absolute' => TRUE, 'query' => $args));
+    $redirect_url = url('cart/pagamastarde/order_complete', array('absolute' => TRUE, 'query' => $args));
 
-  $output  = "<html><head><title>Processing Payment</title><script language=\"javascript\">\n";
-  $output .= "<!--\n";
-  $output .= "window.location.href=\"{$redirect_url}\"\n";
-  $output .= "//-->\n";
-  $output .= "</script></head><body>\n";
-  $output .= "<noscript><meta http-equiv=\"refresh\" content=\"1;url={$redirect_url}\"></noscript>\n";
-  $output .= '<p style="text-align: center">Processing your payment; please wait...</p>';
-  $output .= "<p style=\"text-align: center\"><a href=\"{$redirect_url}\">Please click here if you are not automatically redirected to the next step.</a></p></body></html>";
+    $output  = "<html><head><title>Processing Payment</title><script language=\"javascript\">\n";
+    $output .= "<!--\n";
+    $output .= "window.location.href=\"{$redirect_url}\"\n";
+    $output .= "//-->\n";
+    $output .= "</script></head><body>\n";
+    $output .= "<noscript><meta http-equiv=\"refresh\" content=\"1;url={$redirect_url}\"></noscript>\n";
+    $output .= '<p style="text-align: center">Processing your payment; please wait...</p>';
+    $output .= "<p style=\"text-align: center\"><a href=\"{$redirect_url}\">Please click here if you are not automatically redirected to the next step.</a></p></body></html>";
 
-  // Return it as a post response and exit.
+    // Return it as a post response and exit.
 
-  print $output;
-  exit();
-}
+    print $output;
+    exit();
+  }
 }
 
 /**
- * Callback function triggered by Paga+Tarde fetching the HTML snippet returned
- * for the payment response post.
+ * Callback function triggered by Paga+Tarde.
  */
 function commerce_pagamastarde_order_complete() {
   $order_id = $_GET['oid'];
   watchdog('commerce_pagamastarde', 'Receiving redirect response for order !order_id from Paga+Tarde', array('!order_id' => $order_id));
 
   // Validate posted data.
-
-
-    if ($order = commerce_order_load($order_id)) { // order appears valid
-
-      drupal_goto('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key']);
-    }
-
+  if ($order = commerce_order_load($order_id)) {
+    drupal_goto('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key']);
+  }
 
   // Payment failed; return to checkout.
-
   drupal_set_message($message, 'error');
   drupal_goto('cart');
 }
-//add widget javascript
-drupal_add_js('https://cdn.pagamastarde.com/js/pmt-simulator/latest/js/pmt-simulator.min.js', 'external');
+
+/**
+ * Returns a state name given a state code.
+ */
+function commerce_pagamastarde_get_state_name($state_code, $country_code = NULL) {
+  if ($state_code) {
+    $state_code = drupal_strtoupper($state_code);
+    $country_code = $country_code ? drupal_strtoupper($country_code) : 'US';
+
+    $address['country'] = $country_code;
+    $format_handlers = array('address');
+    $context = array('mode' => 'form');
+    $address_element = addressfield_generate($address, $format_handlers, $context);
+    if (!empty($address_element['locality_block']['administrative_area']['#options'])) {
+      $state_options = $address_element['locality_block']['administrative_area']['#options'];
+      $state_options = array_change_key_case($state_options, CASE_UPPER);
+      return isset($state_options[$state_code]) ? $state_options[$state_code] : '';
+    }
+  }
+}
+
+/**
+ * Build page funciton to include widget js.
+ */
+function commerce_pagamastarde_page_build(&$page) {
+  drupal_add_js('https://cdn.pagamastarde.com/js/pmt-simulator/latest/js/pmt-simulator.min.js', 'external');
+}
