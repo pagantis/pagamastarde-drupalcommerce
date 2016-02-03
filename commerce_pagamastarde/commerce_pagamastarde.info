@@ -1,4 +1,4 @@
-name = Paga Más Tarde
+name = Paga+Tarde
 description = Implements Paga+Tarde financing payment services for use with Drupal Commerce.
 package = Commerce (contrib)
 files[] = commerce_pagamastarde.module
@@ -9,7 +9,7 @@ dependencies[] = commerce_order
 core = 7.x
 
 ; Information added by Drupal.org packaging script on 2015-08-31
-version = "7.x-1.3"
+version = "7.x-2.3"
 core = "7.x"
 project = "commerce_pagamastarde"
 datestamp = "1448220055"

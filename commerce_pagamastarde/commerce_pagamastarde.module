@@ -70,8 +70,8 @@ function commerce_pagamastarde_settings_form($settings = NULL) {
     '#type' => 'select',
     '#title' => t('Entorno'),
     '#options' => array(
-      'test' => 'test',
-      'real' => 'real',
+      'test' => t('test'),
+      'real' => t('real'),
     ),
     '#multiple' => FALSE,
     '#description' => t('Procesar transaciones en modo test o real.'),
@@ -79,34 +79,34 @@ function commerce_pagamastarde_settings_form($settings = NULL) {
   );
   $form['test_account'] = array(
     '#type' => 'textfield',
-    '#title' => t('TEST - Código de cuenta'),
-    '#description' => t('Código de cuenta de test'),
+    '#title' => t('TEST - Public Key'),
+    '#description' => t('Clave publica de test'),
     '#default_value' => $settings['test_account'],
   );
   $form['test_key'] = array(
     '#type' => 'textfield',
-    '#title' => t('TEST - Clave de firma'),
-    '#description' => t('Clave de cunenta de test'),
+    '#title' => t('TEST - Secret Key'),
+    '#description' => t('Clave secreta de test'),
     '#default_value' => $settings['test_key'],
   );
   $form['real_account'] = array(
     '#type' => 'textfield',
-    '#title' => t('REAL - Código de cuenta'),
-    '#description' => t('Código de cuenta real'),
+    '#title' => t('REAL - Public Key'),
+    '#description' => t('Clave publica real'),
     '#default_value' => $settings['real_account'],
   );
   $form['real_key'] = array(
     '#type' => 'textfield',
-    '#title' => t('REAL - Clave de firma'),
-    '#description' => t('Clave de cunenta real'),
+    '#title' => t('REAL - Secret Key'),
+    '#description' => t('Clave secreta real'),
     '#default_value' => $settings['real_key'],
   );
   $form['discount'] = array(
     '#type' => 'select',
     '#title' => t('Descuento - asumir comisiones'),
     '#options' => array(
-      'false' => 'false',
-      'true' => 'true',
+      'false' => t('false'),
+      'true' => t('true'),
     ),
     '#multiple' => FALSE,
     '#description' => t('True si quieres asumir las comisiones de Paga+Tarde, false si quieres que el cliente asuma las comisiones.'),
@@ -328,5 +328,5 @@ function commerce_pagamastarde_get_state_name($state_code, $country_code = NULL)
  * Build page funciton to include widget js.
  */
 function commerce_pagamastarde_page_build(&$page) {
-  drupal_add_js('https://cdn.pagamastarde.com/js/pmt-simulator/latest/js/pmt-simulator.min.js', 'external');
+  drupal_add_js('https://cdn.pagamastarde.com/pmt-simulator/2/js/pmt-simulator.min.js', 'external');
 }
