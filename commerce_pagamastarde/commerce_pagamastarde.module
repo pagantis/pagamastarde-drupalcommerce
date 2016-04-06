@@ -255,13 +255,16 @@ function commerce_pagamastarde_complete() {
 
     $order_id = $notification['data']['order_id'];
     $order = commerce_order_load($order_id);
+    $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+
+    $currency_code = $order_wrapper->commerce_order_total->currency_code->value();
 
     $transaction = commerce_payment_transaction_new('pagamastarde', $order->order_id);
     $transaction->status = COMMERCE_PAYMENT_STATUS_SUCCESS;
     $transaction->message = "Paga+Tarde payment received for order: " . $order->order_id;
     $transaction->remote_id = $notification['data']['id'];
     $transaction->amount = commerce_currency_decimal_to_amount($notification['data']['amount'] / 100, $notification['data']['currency']);
-    $transaction->currency_code = $notification['data']['currency'];
+    $transaction->currency_code = $currency_code;
     commerce_order_status_update($order, 'processing', FALSE, TRUE, 'Your payment has been successfully completed');
     commerce_payment_transaction_save($transaction);
     commerce_payment_redirect_pane_next_page($order);
