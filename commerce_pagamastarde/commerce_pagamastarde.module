@@ -157,10 +157,16 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
 
   // Prepare the billing address for use in the request.
   $billing_address = $order_wrapper->commerce_customer_billing->commerce_customer_address->value();
+  $shipping_address = $order_wrapper->commerce_customer_shipping->commerce_customer_address->value();
   if (empty($billing_address['first_name'])) {
     $name_parts = explode(' ', $billing_address['name_line']);
     $billing_address['first_name'] = array_shift($name_parts);
     $billing_address['last_name'] = implode(' ', $name_parts);
+  }
+  if (empty($shipping_address['first_name'])) {
+    $name_parts = explode(' ', $shipping_address['name_line']);
+    $shipping_address['first_name'] = array_shift($name_parts);
+    $shipping_address['last_name'] = implode(' ', $name_parts);
   }
 
   $amount = $order_wrapper->commerce_order_total->amount->value();
@@ -190,6 +196,7 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
   $signature = sha1($message);
 
   $state_code = commerce_pagamastarde_get_state_name($billing_address['administrative_area'], $billing_address['country']);
+  $sstate_code = commerce_pagamastarde_get_state_name($shipping_address['administrative_area'], $shipping_address['country']);
 
   $submit_data = array(
     'order_id' => $order->order_id,
@@ -206,6 +213,10 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
     'address[city]' => drupal_substr($billing_address['locality'], 0, 40),
     'address[province]' => drupal_substr($state_code, 0, 40),
     'address[zipcode]' => drupal_substr($billing_address['postal_code'], 0, 20),
+    'shipping[street]' => drupal_substr($shipping_address['thoroughfare'], 0, 60),
+    'shipping[city]' => drupal_substr($shipping_address['locality'], 0, 40),
+    'shipping[province]' => drupal_substr($sstate_code, 0, 40),
+    'shipping[zipcode]' => drupal_substr($shipping_address['postal_code'], 0, 20),
     'description' => drupal_substr(implode(', ', $description), 0, 255),
     'signature' => $signature,
   );
@@ -240,6 +251,7 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
       'html' => FALSE,
     ),
   );
+
 
   return $form;
 }
@@ -331,5 +343,6 @@ function commerce_pagamastarde_get_state_name($state_code, $country_code = NULL)
  * Build page funciton to include widget js.
  */
 function commerce_pagamastarde_page_build(&$page) {
-  drupal_add_js('https://cdn.pagamastarde.com/pmt-simulator/2/js/pmt-simulator.min.js', 'external');
+  drupal_add_js('https://cdn.pagamastarde.com/pmt-simulator/3/js/pmt-simulator.min.js', 'external');
+
 }
