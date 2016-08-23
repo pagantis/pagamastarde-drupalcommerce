@@ -256,8 +256,12 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
       'absolute' => TRUE,
       'html' => FALSE,
     ),
+    '#attached' => array(
+      'js' => array(
+        'https://cdn.pagamastarde.com/pmt-simulator/3/js/pmt-simulator.min.js'
+      ),
+    ),
   );
-
 
   return $form;
 }
@@ -335,7 +339,7 @@ function commerce_pagamastarde_order_complete() {
   if ($order = commerce_order_load($order_id)) {
     drupal_goto('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key']);
   }
-
+  $message='Payment failed. Please retry it later.';
   // Payment failed; return to checkout.
   drupal_set_message($message, 'error');
   drupal_goto('cart');
@@ -359,12 +363,4 @@ function commerce_pagamastarde_get_state_name($state_code, $country_code = NULL)
       return isset($state_options[$state_code]) ? $state_options[$state_code] : '';
     }
   }
-}
-
-/**
- * Build page funciton to include widget js.
- */
-function commerce_pagamastarde_page_build(&$page) {
-  drupal_add_js('https://cdn.pagamastarde.com/pmt-simulator/3/js/pmt-simulator.min.js', 'external');
-
 }
