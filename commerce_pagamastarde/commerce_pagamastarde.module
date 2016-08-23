@@ -330,6 +330,7 @@ function commerce_pagamastarde_complete() {
 
 /**
  * Callback function triggered by Paga+Tarde.
+ * Implements hook_order_complete
  */
 function commerce_pagamastarde_order_complete() {
   $order_id = $_GET['oid'];
