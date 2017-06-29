@@ -264,7 +264,13 @@ function commerce_pagamastarde_redirect_form($form, &$form_state, $order, $payme
         array
         (
           'type' => 'inline',
-          'data' => 'jQuery(document).ready(function(){jQuery("#commerce-pagamastarde-redirect-form").submit();});',
+          'data' => '
+              jQuery(document).ready(function(){
+                      jQuery("#commerce-pagamastarde-redirect-form").submit();
+                  }
+              );
+              pmtClient.events.send("checkout", { basketAmount: "$amount" });
+           ',
         )
       ),
     ),
