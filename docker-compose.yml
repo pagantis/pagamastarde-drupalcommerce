@@ -8,5 +8,5 @@ services:
       - 9095:80
     volumes:
       - ./commerce_pagantis:/var/www/html/sites/all/modules/commerce_pagantis
-    hostname:
+    extra_hosts:
       - "drupal.docker:127.0.0.1"
