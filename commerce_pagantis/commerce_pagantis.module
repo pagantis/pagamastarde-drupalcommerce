@@ -39,7 +39,7 @@ function commerce_pagamastarde_commerce_payment_method_info() {
   $payment_methods = array();
 
   $payment_methods['pagamastarde'] = array(
-    'base' => 'commerce_pagamastarde',
+    'base' => 'commerce_pagantis',
     'title' => t('Financiación con Paga+Tarde'),
     'short_title' => t('Paga+Tarde'),
     'description' => t('Paga+Tarde'),
@@ -344,7 +344,7 @@ function commerce_pagamastarde_complete() {
  */
 function commerce_pagamastarde_order_complete() {
   $order_id = $_GET['oid'];
-  watchdog('commerce_pagamastarde', 'Receiving redirect response for order !order_id from Paga+Tarde', array('!order_id' => $order_id));
+  watchdog('commerce_pagantis', 'Receiving redirect response for order !order_id from Paga+Tarde', array('!order_id' => $order_id));
 
   // Validate posted data.
   if ($order = commerce_order_load($order_id)) {
