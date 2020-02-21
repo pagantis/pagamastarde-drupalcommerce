@@ -52,6 +52,10 @@ function commerce_pagantis_commerce_payment_method_info() {
   return $payment_methods;
 }
 
+function commerce_pagantis_currency_info_alter(&$currencies, $langcode) {
+    $currencies['EUR']['decimals'] = 4;
+}
+
 /**
  * Payment method callback: settings form.
  */
@@ -171,7 +175,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
 
   $amount = $order_wrapper->commerce_order_total->amount->value();
   $currency_code = $order_wrapper->commerce_order_total->currency_code->value();
-
+  $parsedAmount = commerce_pagantis_price_amount($amount, $currency_code);
   if ($payment_method['settings']['entorno'] == 'test') {
     $the_account = $payment_method['settings']['test_account'];
     $the_key = $payment_method['settings']['test_key'];
@@ -180,7 +184,6 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     $the_account = $payment_method['settings']['real_account'];
     $the_key = $payment_method['settings']['real_key'];
   }
-  $amount = $amount;
 
   $args = array(
     'oid' => $order->order_id ,
@@ -197,7 +200,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
   $nok_url = check_url(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
 
   // Create the MD5 hash fingerprint.
-  $message = $the_key . $the_account . $order->order_id . $amount . $currency_code .
+  $message = $the_key . $the_account . $order->order_id . $parsedAmount . $currency_code .
     $ok_url . $nok_url . $callback_url . $payment_method['settings']['discount'] . $cancelled_url;
   $signature = sha1($message);
   $signature = hash('sha512',$message);
@@ -209,7 +212,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     'order_id' => $order->order_id,
     'email' => drupal_substr($order->mail, 0, 255),
     'full_name' => drupal_substr($billing_address['first_name'], 0, 50) . " " . drupal_substr($billing_address['last_name'], 0, 50),
-    'amount' => $amount,
+    'amount' => $parsedAmount,
     'currency' => $currency_code,
     'account_id' => $the_account,
     'discount[full]' => $payment_method['settings']['discount'],
@@ -374,4 +377,20 @@ function commerce_pagantis_get_state_name($state_code, $country_code = NULL) {
       return isset($state_options[$state_code]) ? $state_options[$state_code] : '';
     }
   }
+}
+
+/**
+ * Formats a price amount into a decimal value as expected by PayPal.
+ *
+ * @param $amount
+ *   An integer price amount.
+ * @param $currency_code
+ *   The currency code of the price.
+ *
+ * @return
+ *   The decimal price amount as expected by PayPal API servers.
+ */
+function commerce_pagantis_price_amount($amount, $currency_code) {
+    $rounded_amount = commerce_currency_round($amount, commerce_currency_load($currency_code));
+    return number_format(commerce_currency_amount_to_decimal($rounded_amount, $currency_code), 2, '.', '');
 }
