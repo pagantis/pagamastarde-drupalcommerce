@@ -52,10 +52,6 @@ function commerce_pagantis_commerce_payment_method_info() {
   return $payment_methods;
 }
 
-function commerce_pagantis_currency_info_alter(&$currencies, $langcode) {
-    $currencies['EUR']['decimals'] = 4;
-}
-
 /**
  * Payment method callback: settings form.
  */
@@ -130,8 +126,18 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
   }
 
   $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+  $currency_code = $order_wrapper->commerce_order_total->currency_code->value();
 
-  // Build a description for the order.
+  $currency = commerce_currency_load($currency_code);
+  $divisor = 1;
+  switch ((int) $currency['decimals']) {
+      case 3:
+          $divisor = 10;
+      case 4:
+          $divisor = 100;
+  }
+
+    // Build a description for the order.
   $description = array();
   $i = 1;
   foreach ($order_wrapper->commerce_line_items as $delta => $line_item_wrapper) {
@@ -143,7 +149,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
       // Item descriptions.
       $items["items[$i][description]"] = $product->title . " (" . $line_item_wrapper->quantity->value() . ")";
       $items["items[$i][quantity]"] = $line_item_wrapper->quantity->value();
-      $items["items[$i][amount]"] = number_format($price['amount'] / 100 * $line_item_wrapper->quantity->value(), 2, ',', '');
+      $items["items[$i][amount]"] = (string) (($price['amount'] / $divisor) * $line_item_wrapper->quantity->value());
       $i++;
     }
 
@@ -153,11 +159,11 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
       // Shipping data.
       $items["items[0][description]"] = $line_item_wrapper->value()->data['shipping_service']['name'];
       $items["items[0][quantity]"] = 1;
-      $items["items[0][amount]"] += $line_item_wrapper->value()->data['shipping_service']['base_rate']['amount'] / 100;
+      $items["items[0][amount]"] += $line_item_wrapper->value()->data['shipping_service']['base_rate']['amount'] / $divisor;
     }
   }
 
-  $items["items[0][amount]"] = number_format($items["items[0][amount]"], 2, ',', '');
+  $items["items[0][amount]"] = (string) $items["items[0][amount]"];
 
   // Prepare the billing address for use in the request.
   $billing_address = $order_wrapper->commerce_customer_billing->commerce_customer_address->value();
@@ -173,9 +179,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     $shipping_address['last_name'] = implode(' ', $name_parts);
   }
 
-  $amount = $order_wrapper->commerce_order_total->amount->value();
-  $currency_code = $order_wrapper->commerce_order_total->currency_code->value();
-  $parsedAmount = commerce_pagantis_price_amount($amount, $currency_code);
+  $amount = (string) floor($order_wrapper->commerce_order_total->amount->value() / $divisor);
   if ($payment_method['settings']['entorno'] == 'test') {
     $the_account = $payment_method['settings']['test_account'];
     $the_key = $payment_method['settings']['test_key'];
@@ -200,7 +204,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
   $nok_url = check_url(url('checkout/' . $order->order_id . '/payment/back/' . $order->data['payment_redirect_key'], array('absolute' => TRUE)));
 
   // Create the MD5 hash fingerprint.
-  $message = $the_key . $the_account . $order->order_id . $parsedAmount . $currency_code .
+  $message = $the_key . $the_account . $order->order_id . $amount . $currency_code .
     $ok_url . $nok_url . $callback_url . $payment_method['settings']['discount'] . $cancelled_url;
   $signature = sha1($message);
   $signature = hash('sha512',$message);
@@ -212,7 +216,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     'order_id' => $order->order_id,
     'email' => drupal_substr($order->mail, 0, 255),
     'full_name' => drupal_substr($billing_address['first_name'], 0, 50) . " " . drupal_substr($billing_address['last_name'], 0, 50),
-    'amount' => $parsedAmount,
+    'amount' => $amount,
     'currency' => $currency_code,
     'account_id' => $the_account,
     'discount[full]' => $payment_method['settings']['discount'],
@@ -377,20 +381,4 @@ function commerce_pagantis_get_state_name($state_code, $country_code = NULL) {
       return isset($state_options[$state_code]) ? $state_options[$state_code] : '';
     }
   }
-}
-
-/**
- * Formats a price amount into a decimal value as expected by PayPal.
- *
- * @param $amount
- *   An integer price amount.
- * @param $currency_code
- *   The currency code of the price.
- *
- * @return
- *   The decimal price amount as expected by PayPal API servers.
- */
-function commerce_pagantis_price_amount($amount, $currency_code) {
-    $rounded_amount = commerce_currency_round($amount, commerce_currency_load($currency_code));
-    return number_format(commerce_currency_amount_to_decimal($rounded_amount, $currency_code), 2, '.', '');
 }
