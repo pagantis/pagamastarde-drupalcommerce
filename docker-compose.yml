@@ -1,0 +1,12 @@
+# user and password for admin: drupal
+version: '3.7'
+services:
+  drupal:
+    container_name: drupal
+    image: 8thom/commerce-kickstart
+    ports:
+      - 9095:80
+    volumes:
+      - ./commerce_pagantis:/var/www/html/sites/all/modules/commerce_pagantis
+    extra_hosts:
+      - "drupal.docker:127.0.0.1"
