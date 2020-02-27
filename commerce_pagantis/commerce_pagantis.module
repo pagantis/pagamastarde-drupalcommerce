@@ -173,8 +173,19 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     $shipping_address['last_name'] = implode(' ', $name_parts);
   }
 
-  $mobilePhone = $order_wrapper->commerce_customer_shipping->field_phone->value();
-  $dni = $order_wrapper->commerce_customer_billing->field_vat->value();
+  if (isset($order_wrapper->commerce_customer_billing->field_phone)) {
+      $billingPhone = $order_wrapper->commerce_customer_billing->field_phone->value();
+  }
+
+  if (isset($order_wrapper->commerce_customer_shipping->field_phone)) {
+      $shippingPhone = $order_wrapper->commerce_customer_shipping->field_phone->value();
+  }
+
+  if (isset($order_wrapper->commerce_customer_billing->field_vat)) {
+      $dni = $order_wrapper->commerce_customer_billing->field_vat->value();
+  }
+
+  $mobilePhone = ($shippingPhone) ? $shippingPhone : (($billingPhone) ? $billingPhone : null);
 
   $amount = (string) floor($order_wrapper->commerce_order_total->amount->value() / $divisor);
   if ($payment_method['settings']['entorno'] == 'test') {
