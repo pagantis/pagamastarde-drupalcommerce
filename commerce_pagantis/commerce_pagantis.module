@@ -129,13 +129,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
   $currency_code = $order_wrapper->commerce_order_total->currency_code->value();
 
   $currency = commerce_currency_load($currency_code);
-  $divisor = 1;
-  switch ((int) $currency['decimals']) {
-      case 3:
-          $divisor = 10;
-      case 4:
-          $divisor = 100;
-  }
+  $divisor =  pow(10,(int) $currency['decimals']);
 
     // Build a description for the order.
   $description = array();
@@ -179,6 +173,9 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     $shipping_address['last_name'] = implode(' ', $name_parts);
   }
 
+  $mobilePhone = $order_wrapper->commerce_customer_shipping->field_phone->value();
+  $dni = $order_wrapper->commerce_customer_billing->field_vat->value();
+
   $amount = (string) floor($order_wrapper->commerce_order_total->amount->value() / $divisor);
   if ($payment_method['settings']['entorno'] == 'test') {
     $the_account = $payment_method['settings']['test_account'];
@@ -212,7 +209,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
   $state_code = commerce_pagantis_get_state_name($billing_address['administrative_area'], $billing_address['country']);
   $sstate_code = commerce_pagantis_get_state_name($shipping_address['administrative_area'], $shipping_address['country']);
 
-  $submit_data = array(
+    $submit_data = array(
     'order_id' => $order->order_id,
     'email' => drupal_substr($order->mail, 0, 255),
     'full_name' => drupal_substr($billing_address['first_name'], 0, 50) . " " . drupal_substr($billing_address['last_name'], 0, 50),
@@ -233,6 +230,8 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     'shipping[province]' => drupal_substr($sstate_code, 0, 40),
     'shipping[zipcode]' => drupal_substr($shipping_address['postal_code'], 0, 20),
     'description' => drupal_substr(implode(', ', $description), 0, 255),
+    'dni' => $dni,
+    'mobile_phone' => $mobilePhone,
     'signature' => $signature,
   );
   foreach ($items as $key => $value) {
