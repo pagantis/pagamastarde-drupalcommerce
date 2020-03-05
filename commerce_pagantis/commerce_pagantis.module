@@ -129,7 +129,7 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
   $currency_code = $order_wrapper->commerce_order_total->currency_code->value();
 
   $currency = commerce_currency_load($currency_code);
-  $divisor =  pow(10,(int) $currency['decimals']);
+  $divisor =  pow(10,(int) $currency['decimals'] - 2);
 
     // Build a description for the order.
   $description = array();
@@ -304,7 +304,7 @@ function commerce_pagantis_complete() {
 
     $order_id = $notification['data']['order_id'];
     $order = commerce_order_load($order_id);
-    $payment_id = $_GET['pid'];
+    $payment_id = urldecode($_GET['pid']);
     $payment_method = commerce_payment_method_instance_load($payment_id);
     if ($payment_method) {
       if ($payment_method['settings'][  'entorno'] == 'test') {
