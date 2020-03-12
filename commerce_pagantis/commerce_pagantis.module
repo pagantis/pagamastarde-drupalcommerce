@@ -159,6 +159,20 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
 
   $items["items[0][amount]"] = (string) $items["items[0][amount]"];
 
+  $user = entity_metadata_wrapper('user', $order);
+  $userData = $user->value();
+
+  $k = 0;
+  $orderHistoryForm = array();
+  $ordersHistory = commerce_order_load_multiple(array(), array('uid' =>  $order_wrapper->value()->uid, 'status' => 'completed'));
+  foreach ($ordersHistory as $orderHistory) {
+      $data = entity_metadata_wrapper('commerce_order', $orderHistory);
+      $order_total = $data->commerce_order_total->value();
+      $orderHistoryForm["order_history[$k][date]"] = format_date($orderHistory->created, 'custom', 'Y-m-d');
+      $orderHistoryForm["order_history[$k][amount]"] = $order_total['amount'];
+      $k++;
+  }
+
   // Prepare the billing address for use in the request.
   $billing_address = $order_wrapper->commerce_customer_billing->commerce_customer_address->value();
   $shipping_address = $order_wrapper->commerce_customer_shipping->commerce_customer_address->value();
@@ -173,6 +187,9 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     $shipping_address['last_name'] = implode(' ', $name_parts);
   }
 
+  $billingPhone = null;
+  $shippingPhone = null;
+  $dni = null;
   if (isset($order_wrapper->commerce_customer_billing->field_phone)) {
       $billingPhone = $order_wrapper->commerce_customer_billing->field_phone->value();
   }
@@ -244,8 +261,13 @@ function commerce_pagantis_redirect_form($form, &$form_state, $order, $payment_m
     'dni' => $dni,
     'mobile_phone' => $mobilePhone,
     'signature' => $signature,
+    'metadata[member_since]' => format_date($userData->created, 'custom', 'Y-m-d'),
   );
   foreach ($items as $key => $value) {
+    $submit_data[$key] = $value;
+  }
+
+  foreach ($orderHistoryForm as $key => $value) {
     $submit_data[$key] = $value;
   }
 
@@ -365,6 +387,7 @@ function commerce_pagantis_order_complete() {
 
   // Validate posted data.
   if ($order = commerce_order_load($order_id)) {
+    commerce_checkout_complete($order);
     drupal_goto('checkout/' . $order->order_id . '/payment/return/' . $order->data['payment_redirect_key']);
   }
   $message='Payment failed. Please retry it later.';
